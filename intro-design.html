@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Assignment Tracker</title>
+    <style>
+        /* Reset CSS */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 600px;
+            margin: 50px auto;
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .form input {
+            padding: 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        .form input[type="text"],
+        .form input[type="date"] {
+            background-color: #1e1e1e;
+            color: #ffffff;
+        }
+
+        .form button {
+            padding: 15px;
+            background-color: #6200ee;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .form button:hover {
+            background-color: #3700b3;
+        }
+
+        .list h2 {
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        .list ul {
+            list-style: none;
+        }
+
+        .list li {
+            background-color: #1e1e1e;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .list li::before {
+            content: '';
+            position: absolute;
+            left: -10px;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 80%;
+            width: 5px;
+            background-color: #6200ee;
+            border-radius: 5px;
+        }
+
+        .due-soon::before {
+            background-color: #ff0266;
+        }
+
+        .list li.completed {
+            opacity: 0.6;
+            text-decoration: line-through;
+        }
+
+        .assignment-details {
+            flex-grow: 1;
+        }
+
+        .assignment-details span {
+            display: block;
+            font-size: 1.2em;
+        }
+
+        .assignment-details small {
+            display: block;
+            margin-top: 5px;
+            color: #bbbbbb;
+        }
+
+        .list li input[type="checkbox"] {
+            margin-left: 15px;
+            transform: scale(1.5);
+            accent-color: #6200ee;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Assignment Tracker</h1>
+        <div class="form">
+            <input type="text" id="assignmentName" placeholder="Assignment Name">
+            <input type="date" id="dueDate">
+            <button id="addAssignment">Add Assignment</button>
+        </div>
+        <div class="list">
+            <h2>Upcoming Assignments</h2>
+            <ul id="assignmentList"></ul>
+        </div>
+    </div>
+
+    <script>
+        let assignments = [];
+
+        // Load assignments from localStorage
+        window.addEventListener('load', () => {
+            if (localStorage.getItem('assignments')) {
+                assignments = JSON.parse(localStorage.getItem('assignments'));
+                assignments.forEach(addAssignmentToDOM);
+            }
+        });
+
+        const assignmentName = document.getElementById('assignmentName');
+        const dueDate = document.getElementById('dueDate');
+        const addAssignment = document.getElementById('addAssignment');
+        const assignmentList = document.getElementById('assignmentList');
+
+        addAssignment.addEventListener('click', () => {
+            const name = assignmentName.value.trim();
+            const date = dueDate.value;
+
+            if (name === '' || date === '') {
+                alert('Please enter both assignment name and due date.');
+                return;
+            }
+
+            const assignment = {
+                id: Date.now(),
+                name: name,
+                date: date,
+                completed: false
+            };
+
+            assignments.push(assignment);
+            addAssignmentToDOM(assignment);
+            saveAssignments();
+
+            // Clear input fields
+            assignmentName.value = '';
+            dueDate.value = '';
+        });
+
+        function addAssignmentToDOM(assignment) {
+            const listItem = document.createElement('li');
+            listItem.setAttribute('data-id', assignment.id);
+
+            const assignmentDetails = document.createElement('div');
+            assignmentDetails.classList.add('assignment-details');
+
+            const assignmentSpan = document.createElement('span');
+            assignmentSpan.textContent = assignment.name;
+
+            const dueDateSmall = document.createElement('small');
+            dueDateSmall.textContent = 'Due: ' + new Date(assignment.date).toLocaleDateString();
+
+            assignmentDetails.appendChild(assignmentSpan);
+            assignmentDetails.appendChild(dueDateSmall);
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = assignment.completed;
+            checkbox.addEventListener('change', () => {
+                assignment.completed = checkbox.checked;
+                if (assignment.completed) {
+                    listItem.classList.add('completed');
+                } else {
+                    listItem.classList.remove('completed');
+                }
+                saveAssignments();
+            });
+
+            // Append elements to listItem
+            listItem.appendChild(assignmentDetails);
+            listItem.appendChild(checkbox);
+
+            // Highlight assignments due within 1 day
+            const dueTime = new Date(assignment.date).getTime();
+            const currentTime = new Date().getTime();
+            const timeDifference = dueTime - currentTime;
+            const daysDifference = timeDifference / (1000 * 3600 * 24);
+
+            if (daysDifference <= 1 && daysDifference >= 0 && !assignment.completed) {
+                listItem.classList.add('due-soon');
+            }
+
+            if (assignment.completed) {
+                listItem.classList.add('completed');
+            }
+
+            assignmentList.appendChild(listItem);
+        }
+
+        function saveAssignments() {
+            localStorage.setItem('assignments', JSON.stringify(assignments));
+        }
+    </script>
+</body>
+</html>
